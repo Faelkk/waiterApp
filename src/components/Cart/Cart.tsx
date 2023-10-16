@@ -17,9 +17,11 @@ import { PlusCircle } from "../Icons/PlusCircle";
 import { MinusCircle } from "../Icons/MinusCircle";
 import Button from "../Button/Button";
 import OrderConfirmedModal from "../OrderConfirmedModal/OrderConfirmedModal";
+import { api } from "../../utils/api";
 
 interface CartProps {
     cartItems: CartItem[];
+    tableSelected: string;
     onAdd: (product: Product) => void;
     onDecrement: (product: Product) => void;
     onConfirmOrder: () => void;
@@ -27,20 +29,35 @@ interface CartProps {
 
 export default function Cart({
     cartItems,
+    tableSelected,
     onAdd,
     onDecrement,
     onConfirmOrder,
 }: CartProps) {
     const [visibleModalConfirm, setVisibleModalConfirm] = useState(false);
-    const [isLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const Total = cartItems.reduce((acc, cartItem) => {
         return acc + cartItem.quantity * cartItem.product.price;
     }, 0);
 
+    async function handleConfirmOrder() {
+        setIsLoading(true);
+        const payload = {
+            table: tableSelected,
+            products: cartItems.map((cartItem) => ({
+                product: cartItem.product._id,
+                quantity: cartItem.quantity,
+            })),
+        };
+
+        api.post("/orders", payload);
+        setIsLoading(false);
+        setVisibleModalConfirm(true);
+    }
     function handleOK() {
-        setVisibleModalConfirm(false);
         onConfirmOrder();
+        setVisibleModalConfirm(false);
     }
 
     return (
@@ -114,7 +131,7 @@ export default function Cart({
                     )}
                 </TotalContainer>
                 <Button
-                    onPress={() => setVisibleModalConfirm(true)}
+                    onPress={handleConfirmOrder}
                     disabled={cartItems.length === 0}
                     loading={isLoading}
                 >
